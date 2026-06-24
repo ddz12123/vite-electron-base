@@ -48,7 +48,7 @@
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "postcss": "^8.5.15",
-    "postcss-px-to-viewport-8-plugin": "^1.1.5",
+    "postcss-pxtorem": "^6.1.0",
     "prettier": "^3.7.4",
     "sass-embedded": "^1.100.0",
     "tailwindcss": "^4.3.1",

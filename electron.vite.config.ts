@@ -1,13 +1,15 @@
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'electron-vite';
 import vue from '@vitejs/plugin-vue';
-import pxtoviewport from 'postcss-px-to-viewport-8-plugin';
+import autoprefixer from 'autoprefixer';
+import pxtorem from 'postcss-pxtorem';
 import tailwindcss from '@tailwindcss/vite';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 
 const prodDrop: Array<'console' | 'debugger'> = ['console', 'debugger'];
+
 export default defineConfig(({ command }) => {
   const drop = command === 'build' ? prodDrop : [];
   const mode = command === 'serve' ? 'development' : 'production';
@@ -50,18 +52,16 @@ export default defineConfig(({ command }) => {
       css: {
         postcss: {
           plugins: [
-            pxtoviewport({
-              unitToConvert: 'px', // 需要转换的单位
-              viewportWidth: 1920, // 设计稿视口宽度
-              unitPrecision: 6, // vw 值保留的小数位数
-              propList: ['*', '!font-size'], // 所有属性转换，排除 font-size
-              viewportUnit: 'vw', // 视口单位
-              selectorBlackList: [], // 选择器黑名单
-              minPixelValue: 2, // 小于 2px 不转换，保留 1px 边框
-              mediaQuery: false, // 不转换媒体查询中的 px
-              replace: true, // 直接替换，不保留 px fallback
-              include: [/[/\\]src[/\\]/i, /[/\\]element-plus[/\\]/i], // 只处理 src 和 element-plus 的样式
-              landscape: false, // 不添加横屏媒体查询
+            autoprefixer(),
+            pxtorem({
+              rootValue: 16,
+              propList: ['*', '!font-size'],
+              selectorBlackList: ['.no-rem'],
+              unitPrecision: 1,
+              replace: true,
+              mediaQuery: false,
+              minPixelValue: 1,
+              exclude: /node_modules/i,
             }),
           ],
         },
