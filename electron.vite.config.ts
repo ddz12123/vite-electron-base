@@ -1,5 +1,5 @@
 import { resolve } from 'path';
-import { defineConfig } from 'electron-vite';
+import { defineConfig, loadEnv } from 'electron-vite';
 import vue from '@vitejs/plugin-vue';
 import pxtoviewport from 'postcss-px-to-viewport-8-plugin';
 import tailwindcss from '@tailwindcss/vite';
@@ -10,9 +10,15 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 const prodDrop: Array<'console' | 'debugger'> = ['console', 'debugger'];
 export default defineConfig(({ command }) => {
   const drop = command === 'build' ? prodDrop : [];
+  const mode = command === 'serve' ? 'development' : 'production';
+  const env = loadEnv(mode);
 
   return {
     main: {
+      define: {
+        'import.meta.env.VITE_APP_ID': JSON.stringify(env.VITE_APP_ID || 'com.electron.app'),
+        'import.meta.env.VITE_APP_TITLE': JSON.stringify(env.VITE_APP_TITLE || 'ViteElectronBase'),
+      },
       esbuild: {
         drop,
       },

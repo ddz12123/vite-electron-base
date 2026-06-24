@@ -38,10 +38,10 @@ const parseEnvFile = (filePath) => {
   return env;
 };
 
-// 优先级：.env.production > .env > process.env
+// Priority: process.env > .env.production > .env
 const env = {
   ...parseEnvFile(resolve(rootDir, '.env')),
-  ...parseEnvFile(resolve(rootDir, '.env.prod')),
+  ...parseEnvFile(resolve(rootDir, '.env.production')),
   ...process.env,
 };
 
