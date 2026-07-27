@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { setupAutoUpdater } from './updater';
 import icon from '../../resources/icon.png?asset';
 
 const APP_ID = import.meta.env.VITE_APP_ID?.trim() || 'com.electron.app';
@@ -30,6 +31,15 @@ function createWindow(): void {
     return { action: 'deny' };
   });
 
+  // 安全基线：禁止页面内导航到应用自身以外的地址
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    const isDevUrl = is.dev && !!devUrl && url.startsWith(devUrl);
+    if (!isDevUrl && !url.startsWith('file://')) {
+      event.preventDefault();
+    }
+  });
+
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -55,6 +65,8 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'));
+
+  setupAutoUpdater();
 
   createWindow();
 

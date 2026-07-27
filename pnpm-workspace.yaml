@@ -1,0 +1,31 @@
+# pnpm 设置（pnpm v10+ 不再读取 package.json 中的 pnpm 字段）
+# https://pnpm.io/settings
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+
+overrides:
+  vite: 7.3.5
+  '@types/node': 22.20.0
+  # ---- 安全修复（pnpm audit，均为构建链传递依赖）----
+  # 注意：范围必须带上界；brace-expansion 不可跨大版本升到 v5，
+  # v5 的 CJS 导出是 { expand } 命名导出，而 minimatch<10 直接把
+  # require('brace-expansion') 当函数调用，强升会在打包时运行时报错
+  'tar@7': '>=7.5.21 <8'
+  'brace-expansion@1': '>=1.1.16 <2'
+  'brace-expansion@2': '>=2.1.2 <3'
+  'brace-expansion@5': '>=5.0.8 <6'
+  'js-yaml@4': '>=4.3.0 <5'
+  'immutable@5': '>=5.1.8 <6'
+  'fast-uri@3': '>=3.1.4 <4'
+  'postcss@8': '>=8.5.18 <9'
+
+auditConfig:
+  ignoreGhsas:
+    # esbuild 自带 dev server 的文件读取漏洞；Vite 仅用 esbuild 做转译，
+    # 不使用其 serve 功能，且 vite 7.3.5 锁定 esbuild ^0.27，强升有兼容风险
+    - GHSA-g7r4-m6w7-qqqr
+    # brace-expansion 无上界展开 OOM：补丁仅落在 5.0.8，未回移到 1.x/2.x，
+    # 且 v5 CJS 导出不兼容无法强升；仅构建/lint 期使用，glob 模式来自
+    # 开发者自身配置，不存在攻击者可控输入，风险可接受
+    - GHSA-mh99-v99m-4gvg

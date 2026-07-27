@@ -1,5 +1,5 @@
 import { resolve } from 'path';
-import { defineConfig, loadEnv } from 'electron-vite';
+import { defineConfig, externalizeDepsPlugin, loadEnv } from 'electron-vite';
 import vue from '@vitejs/plugin-vue';
 import autoprefixer from 'autoprefixer';
 import pxtorem from 'postcss-pxtorem';
@@ -10,13 +10,13 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 
 const prodDrop: Array<'console' | 'debugger'> = ['console', 'debugger'];
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   const drop = command === 'build' ? prodDrop : [];
-  const mode = command === 'serve' ? 'development' : 'production';
   const env = loadEnv(mode);
 
   return {
     main: {
+      plugins: [externalizeDepsPlugin()],
       define: {
         'import.meta.env.VITE_APP_ID': JSON.stringify(env.VITE_APP_ID || 'com.electron.app'),
         'import.meta.env.VITE_APP_TITLE': JSON.stringify(env.VITE_APP_TITLE || 'ViteElectronBase'),
@@ -26,6 +26,7 @@ export default defineConfig(({ command }) => {
       },
     },
     preload: {
+      plugins: [externalizeDepsPlugin()],
       esbuild: {
         drop,
       },

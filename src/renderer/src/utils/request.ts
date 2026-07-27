@@ -42,9 +42,13 @@ export const request = axios.create({
 });
 
 const redirectToLogin = (): void => {
-  const currentPath = normalizeRedirect(router.currentRoute.value.fullPath);
-
   clearToken();
+
+  // 基础框架默认没有 login 路由，业务侧注册后自动生效
+  if (!router.hasRoute('login')) return;
+  if (router.currentRoute.value.name === 'login') return;
+
+  const currentPath = normalizeRedirect(router.currentRoute.value.fullPath);
 
   void router.replace({
     name: 'login',
@@ -56,7 +60,7 @@ request.interceptors.request.use((config: InternalAxiosRequestConfig & RequestCo
   if (!config.ignoreToken) {
     const token = getToken();
     if (token) {
-      config.headers.Authorization = `${token}`;
+      config.headers.Authorization = token;
     }
   }
   return config;
@@ -105,7 +109,7 @@ export const http = {
     return request.request<unknown, T>(config);
   },
   get<T = unknown>(url: string, params?: object, config?: RequestConfig) {
-    return request.get<unknown, T>(url, { ...config, params });
+    return request.get<unknown, T>(url, { ...config, params: params ?? config?.params });
   },
   post<T = unknown>(url: string, data?: unknown, config?: RequestConfig) {
     return request.post<unknown, T>(url, data, config);
@@ -117,6 +121,6 @@ export const http = {
     return request.patch<unknown, T>(url, data, config);
   },
   delete<T = unknown>(url: string, params?: object, config?: RequestConfig) {
-    return request.delete<unknown, T>(url, { ...config, params });
+    return request.delete<unknown, T>(url, { ...config, params: params ?? config?.params });
   },
 };
