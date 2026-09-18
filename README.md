@@ -65,17 +65,18 @@
 
 ## 环境变量配置
 
-| 变量                        | 说明                   | 示例                           |
-| --------------------------- | ---------------------- | ------------------------------ |
-| `VITE_APP_ID`               | 应用唯一标识           | `com.electron.app`             |
-| `VITE_APP_TITLE`            | 应用显示名称（可中文） | `ViteElectronBase`             |
-| `VITE_APP_EXECUTABLE_NAME`  | 可执行文件名（英文）   | `vite-electron-base`           |
-| `VITE_API_BASE_URL`         | API 接口地址           | `http://localhost:3000/api`    |
-| `VITE_AUTO_UPDATE_ENABLED`  | 是否启用自动更新       | `false`                        |
-| `VITE_AUTO_UPDATE_PROVIDER` | 更新发布方式           | `github` / `generic`           |
-| `VITE_UPDATE_URL`           | Generic 更新地址       | `https://updates.example.com/` |
-| `VITE_UPDATE_GITHUB_OWNER`  | GitHub 仓库所有者      | `your-org`                     |
-| `VITE_UPDATE_GITHUB_REPO`   | GitHub 仓库名          | `your-app`                     |
+| 变量                        | 说明                    | 示例                           |
+| --------------------------- | ----------------------- | ------------------------------ |
+| `VITE_APP_ID`               | 应用唯一标识            | `com.electron.app`             |
+| `VITE_APP_TITLE`            | 应用显示名称（可中文）  | `ViteElectronBase`             |
+| `VITE_APP_EXECUTABLE_NAME`  | 可执行文件名（英文）    | `vite-electron-base`           |
+| `VITE_API_BASE_URL`         | API 接口地址            | `http://localhost:3000/api`    |
+| `VITE_AUTO_UPDATE_ENABLED`  | 是否启用自动更新        | `false`                        |
+| `VITE_AUTO_UPDATE_PROVIDER` | 更新发布方式            | `github` / `generic`           |
+| `VITE_UPDATE_URL`           | Generic 更新地址        | `https://updates.example.com/` |
+| `VITE_UPDATE_GITHUB_OWNER`  | GitHub 仓库所有者       | `your-org`                     |
+| `VITE_UPDATE_GITHUB_REPO`   | GitHub 仓库名           | `your-app`                     |
+| `VITE_NSIS_GUID`            | 固定安装包 GUID（可选） | `f8941786-...`                 |
 
 环境文件：
 
@@ -133,6 +134,29 @@ pnpm build:linux
 ```
 
 打包配置从环境变量读取应用名称，安装包文件名格式：`{executableName}-{version}-setup.{ext}`
+
+## Windows 安装与卸载
+
+`pnpm build:win` 产出向导式（非一键）安装包，配置在 `electron-builder.config.mjs` 的 `nsis` 段，交互逻辑在 `build/installer.nsh`：
+
+1. 选择语言（中文 / 英文）
+2. 选择安装范围（仅当前用户 / 所有用户）
+3. 选择安装目录（会自动补上应用名子目录）
+4. 附加选项：创建桌面图标、开机后自动启动
+5. 完成页可勾选立即运行
+
+- 开机自启写注册表 `Run` 项：当前用户安装写 `HKCU`，所有用户安装写 `HKLM`。
+- 卸载时弹窗询问是否删除用户数据（`%APPDATA%\<应用名>`），默认保留；静默卸载不弹窗。
+- 脚本化安装/卸载参数：`setup.exe /S`（静默，沿用注册表里的原目录）、`--no-desktop-shortcut`、`--delete-app-data`、`/D=目录`（须为最后一个参数）；`Uninstall.exe /S --delete-app-data` 为静默删除数据。
+- 选项会记录在 `HKCU\Software\<安装包 GUID>`，重装时复选框默认值沿用上次选择。
+
+## 升级与覆盖安装
+
+- 自动更新以 `--updated` 静默运行安装器：跳过选项页、保持原目录、不重建快捷方式、不删用户数据。
+- 注册表与"应用和功能"里的记录由安装包 GUID 标识，默认从 `VITE_APP_ID` 派生。发布后不要改 `VITE_APP_ID`，否则 Windows 会当成两个应用而不是覆盖升级；确实要改时用 `VITE_NSIS_GUID` 固定成原来的 GUID。
+- `uninstallDisplayName` 不带版本号，控制面板始终只有一条记录。
+- 开启了差量更新（`differentialPackage`），发布时保留上一版的 `*.nsis.7z` 才能只下载差异部分。
+- 默认按当前用户安装到 `%LOCALAPPDATA%\Programs`，自动更新不需要管理员权限。
 
 ## 主要功能
 

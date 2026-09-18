@@ -56,6 +56,7 @@ const updateProvider = env.VITE_AUTO_UPDATE_PROVIDER?.trim().toLowerCase() || 'g
 const updateUrl = env.VITE_UPDATE_URL?.trim();
 const githubOwner = env.VITE_UPDATE_GITHUB_OWNER?.trim();
 const githubRepo = env.VITE_UPDATE_GITHUB_REPO?.trim();
+const nsisGuid = env.VITE_NSIS_GUID?.trim();
 
 const publish = (() => {
   if (!autoUpdateEnabled) return undefined;
@@ -106,13 +107,30 @@ export default {
   asarUnpack: ['resources/**'],
   win: {
     executableName,
-    icon: 'resources/icon.png',
+    icon: 'build/icon.ico',
   },
   nsis: {
     artifactName: `${executableName}-${packageVersion}-setup.\${ext}`,
+    // 向导式安装：可选安装目录 + 附加选项页（定义见 build/installer.nsh）
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+    // 默认当前用户安装（自动更新无需 UAC），用户可在向导里选择"所有用户"
+    perMachine: false,
+    allowElevation: true,
+    runAfterFinish: true,
+    // true = 仅全新安装创建；是否创建由向导复选框决定（"always" 会每次覆盖重建）
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
-    createDesktopShortcut: true,
+    // 卸载时由 installer.nsh 弹窗询问，避免 deleteAppDataOnUninstall 无条件删除
+    deleteAppDataOnUninstall: false,
+    include: 'build/installer.nsh',
+    installerLanguages: ['zh_CN', 'en_US'],
+    displayLanguageSelector: true,
+    // 升级时只下载差异包，需要发布时保留上一版 installer 的 .nsis7z
+    differentialPackage: true,
+    ...(nsisGuid ? { guid: nsisGuid } : {}),
   },
   mac: {
     icon: 'resources/icon.png',
