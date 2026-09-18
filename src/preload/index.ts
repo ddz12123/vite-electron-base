@@ -1,8 +1,12 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
+import type { AppApi } from '../shared/app';
+import { IPC_CHANNELS } from '../shared/channels';
 
-// Custom APIs for renderer
-const api = {};
+const api: AppApi = {
+  getInfo: () => ipcRenderer.invoke(IPC_CHANNELS.getAppInfo),
+  openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
+};
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
@@ -15,8 +19,5 @@ if (process.contextIsolated) {
     console.error(error);
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI;
-  // @ts-ignore (define in dts)
-  window.api = api;
+  Object.assign(globalThis, { electron: electronAPI, api });
 }

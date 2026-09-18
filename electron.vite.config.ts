@@ -1,5 +1,5 @@
 import { resolve } from 'path';
-import { defineConfig, externalizeDepsPlugin, loadEnv } from 'electron-vite';
+import { defineConfig, loadEnv } from 'electron-vite';
 import vue from '@vitejs/plugin-vue';
 import autoprefixer from 'autoprefixer';
 import pxtorem from 'postcss-pxtorem';
@@ -12,21 +12,33 @@ const prodDrop: Array<'console' | 'debugger'> = ['console', 'debugger'];
 
 export default defineConfig(({ command, mode }) => {
   const drop = command === 'build' ? prodDrop : [];
-  const env = loadEnv(mode);
+  const env = {
+    ...loadEnv(mode),
+    ...process.env,
+  };
 
   return {
     main: {
-      plugins: [externalizeDepsPlugin()],
+      build: {
+        externalizeDeps: true,
+      },
       define: {
         'import.meta.env.VITE_APP_ID': JSON.stringify(env.VITE_APP_ID || 'com.electron.app'),
         'import.meta.env.VITE_APP_TITLE': JSON.stringify(env.VITE_APP_TITLE || 'ViteElectronBase'),
+        'import.meta.env.VITE_AUTO_UPDATE_ENABLED': JSON.stringify(
+          env.VITE_AUTO_UPDATE_ENABLED || 'false',
+        ),
+        'import.meta.env.VITE_UPDATE_URL': JSON.stringify(env.VITE_UPDATE_URL || ''),
       },
       esbuild: {
         drop,
       },
     },
     preload: {
-      plugins: [externalizeDepsPlugin()],
+      build: {
+        // Bundle preload dependencies so it can run with Electron's sandbox enabled.
+        externalizeDeps: false,
+      },
       esbuild: {
         drop,
       },

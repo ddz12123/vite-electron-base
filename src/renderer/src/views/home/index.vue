@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <h1 class="home-title">Vite Electron Base</h1>
+    <h1 class="home-title">{{ appStore.appName }}</h1>
     <p class="home-desc">基础框架模板：Electron + Vue3 + TypeScript + Element Plus</p>
     <el-button type="primary">Element Plus 按钮</el-button>
     <Versions />
@@ -9,6 +9,9 @@
 
 <script lang="ts" setup>
 import Versions from '@renderer/components/Versions.vue';
+import { useAppStore } from '@renderer/store/app';
+
+const appStore = useAppStore();
 </script>
 
 <style lang="scss" scoped>

@@ -51,6 +51,43 @@ const packageVersion = String(packageJson.version ?? '').trim();
 const appTitle = env.VITE_APP_TITLE?.trim() || 'ViteElectronBase';
 const appId = env.VITE_APP_ID?.trim() || 'com.electron.app';
 const executableName = env.VITE_APP_EXECUTABLE_NAME?.trim() || 'vite-electron-base';
+const autoUpdateEnabled = env.VITE_AUTO_UPDATE_ENABLED?.trim().toLowerCase() === 'true';
+const updateProvider = env.VITE_AUTO_UPDATE_PROVIDER?.trim().toLowerCase() || 'generic';
+const updateUrl = env.VITE_UPDATE_URL?.trim();
+const githubOwner = env.VITE_UPDATE_GITHUB_OWNER?.trim();
+const githubRepo = env.VITE_UPDATE_GITHUB_REPO?.trim();
+
+const publish = (() => {
+  if (!autoUpdateEnabled) return undefined;
+
+  if (updateProvider === 'github') {
+    if (!githubOwner || !githubRepo) {
+      throw new Error(
+        'GitHub auto-update requires VITE_UPDATE_GITHUB_OWNER and VITE_UPDATE_GITHUB_REPO',
+      );
+    }
+
+    return {
+      provider: 'github',
+      owner: githubOwner,
+      repo: githubRepo,
+      releaseType: 'release',
+    };
+  }
+
+  if (updateProvider === 'generic') {
+    if (!updateUrl) {
+      throw new Error('Generic auto-update requires VITE_UPDATE_URL');
+    }
+
+    return {
+      provider: 'generic',
+      url: updateUrl.endsWith('/') ? updateUrl : `${updateUrl}/`,
+    };
+  }
+
+  throw new Error(`Unsupported VITE_AUTO_UPDATE_PROVIDER: ${updateProvider}`);
+})();
 
 export default {
   appId,
@@ -103,10 +140,7 @@ export default {
     artifactName: `${executableName}-${packageVersion}.\${ext}`,
   },
   npmRebuild: false,
-  publish: {
-    provider: 'generic',
-    url: 'https://example.com/auto-updates',
-  },
+  ...(publish ? { publish } : {}),
   electronDownload: {
     mirror: 'https://npmmirror.com/mirrors/electron/',
   },

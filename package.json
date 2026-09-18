@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
-  "packageManager": "pnpm@10.30.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "author": "example.com",
   "homepage": "https://electron-vite.org",
   "scripts": {
@@ -15,7 +17,7 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "build": "pnpm run typecheck && electron-vite build",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "node node_modules/electron/install.js",
     "build:unpack": "pnpm run build && electron-builder --dir -c electron-builder.config.mjs",
     "build:win": "pnpm run build && electron-builder --win -c electron-builder.config.mjs",
     "build:mac": "pnpm run build && electron-builder --mac -c electron-builder.config.mjs",
@@ -37,7 +39,7 @@
     "@vueuse/core": "^14.3.0",
     "autoprefixer": "^10.5.0",
     "axios": "^1.18.1",
-    "electron": "^39.2.6",
+    "electron": "^43.7.1",
     "electron-builder": "^26.0.12",
     "electron-vite": "^5.0.0",
     "element-plus": "^2.14.2",

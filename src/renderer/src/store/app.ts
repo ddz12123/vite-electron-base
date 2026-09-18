@@ -4,13 +4,17 @@ import { ref } from 'vue';
 export const useAppStore = defineStore(
   'app',
   () => {
-    const appName = ref('My App');
+    const appName = import.meta.env.VITE_APP_TITLE || 'ViteElectronBase';
+    const sidebarCollapsed = ref(false);
 
     return {
       appName,
+      sidebarCollapsed,
     };
   },
   {
-    persist: true,
+    persist: {
+      pick: ['sidebarCollapsed'],
+    },
   },
 );
