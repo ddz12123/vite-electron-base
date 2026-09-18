@@ -1,6 +1,6 @@
 import { app, ipcMain, shell } from 'electron';
-import type { AppInfo } from '../shared/app';
-import { IPC_CHANNELS } from '../shared/channels';
+import type { AppInfo } from '@shared/app';
+import { IPC_CHANNELS } from '@shared/channels';
 import { isAllowedExternalUrl } from './security';
 
 const getAppInfo = (): AppInfo => ({

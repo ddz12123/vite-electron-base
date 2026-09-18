@@ -59,7 +59,8 @@
 
 - 主进程能力集中在 `main/`，窗口入口只负责生命周期和窗口创建。
 - renderer 不直接导入 Electron，只通过 preload 暴露的类型化 `window.api` 调用原生能力。
-- IPC channel 和跨进程数据类型统一放在 `src/shared/`，避免字符串和接口重复维护。
+- IPC channel 和跨进程数据类型统一放在 `src/shared/`，三个环境都用 `@shared/` 别名引用，避免字符串和接口重复维护。
+- 业务组件一律显式 `import`（`components/` 不参与自动注册），只有 Element Plus 组件由解析器按需引入。
 - 可复用的 renderer 逻辑放在 `composables/`，页面组件只负责组合业务和展示。
 - 路由使用 `meta.title` 管理窗口标题；需要登录的页面可使用 `meta.requiresAuth` 扩展路由守卫。
 

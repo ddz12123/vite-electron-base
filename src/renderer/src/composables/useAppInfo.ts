@@ -1,5 +1,5 @@
 import { onMounted, ref } from 'vue';
-import type { AppInfo } from '../../../shared/app';
+import type { AppInfo } from '@shared/app';
 
 export const useAppInfo = () => {
   const info = ref<AppInfo | null>(null);

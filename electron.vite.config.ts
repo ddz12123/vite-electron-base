@@ -1,7 +1,6 @@
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'electron-vite';
 import vue from '@vitejs/plugin-vue';
-import autoprefixer from 'autoprefixer';
 import pxtorem from 'postcss-pxtorem';
 import tailwindcss from '@tailwindcss/vite';
 import AutoImport from 'unplugin-auto-import/vite';
@@ -9,6 +8,7 @@ import Components from 'unplugin-vue-components/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 
 const prodDrop: Array<'console' | 'debugger'> = ['console', 'debugger'];
+const sharedAlias = { '@shared': resolve('src/shared') };
 
 export default defineConfig(({ command, mode }) => {
   const drop = command === 'build' ? prodDrop : [];
@@ -19,6 +19,9 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     main: {
+      resolve: {
+        alias: sharedAlias,
+      },
       build: {
         externalizeDeps: true,
       },
@@ -35,6 +38,9 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     preload: {
+      resolve: {
+        alias: sharedAlias,
+      },
       build: {
         // Bundle preload dependencies so it can run with Electron's sandbox enabled.
         externalizeDeps: false,
@@ -46,6 +52,7 @@ export default defineConfig(({ command, mode }) => {
     renderer: {
       resolve: {
         alias: {
+          ...sharedAlias,
           '@renderer': resolve('src/renderer/src'),
         },
       },
@@ -58,6 +65,8 @@ export default defineConfig(({ command, mode }) => {
           resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
         }),
         Components({
+          // 业务组件一律显式 import，只让解析器自动注册 Element Plus 组件
+          dirs: [],
           dts: './src/types/components.d.ts',
           resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
         }),
@@ -65,7 +74,6 @@ export default defineConfig(({ command, mode }) => {
       css: {
         postcss: {
           plugins: [
-            autoprefixer(),
             pxtorem({
               rootValue: 16,
               propList: ['*', '!font-size'],
@@ -80,7 +88,9 @@ export default defineConfig(({ command, mode }) => {
         },
         preprocessorOptions: {
           scss: {
-            additionalData: `@use "@renderer/styles/_variables.scss" as *; @use "@renderer/styles/main.scss" as *; @use "@renderer/styles/element/index.scss" as *;`,
+            // element/index.scss 必须注入：它是 EP 主色覆盖唯一的生效入口
+            // （Vite 会把它前置到 Element Plus 自身的 .scss，EP 组件样式才能读到配置过的 common/var）
+            additionalData: `@use "@renderer/styles/_variables.scss" as *; @use "@renderer/styles/element/index.scss" as *;`,
           },
         },
       },

@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
-import type { AppApi } from '../shared/app';
-import { IPC_CHANNELS } from '../shared/channels';
+import type { AppApi } from '@shared/app';
+import { IPC_CHANNELS } from '@shared/channels';
 
 const api: AppApi = {
   getInfo: () => ipcRenderer.invoke(IPC_CHANNELS.getAppInfo),
