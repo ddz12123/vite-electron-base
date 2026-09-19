@@ -8,6 +8,17 @@ VITE_AUTO_UPDATE_ENABLED=true
 
 普通开发和普通构建保持默认值 `false`，不会请求更新服务。
 
+## 本地调试自动更新
+
+打包后才会检查更新；想在 `pnpm dev` 里调试，额外设置：
+
+```text
+VITE_AUTO_UPDATE_ENABLED=true
+VITE_AUTO_UPDATE_DEV=true
+```
+
+此时 `electron-updater` 读取仓库根目录的 `dev-app-update.yml`，把其中的地址当作更新源。调试完记得改回 `false`，否则每次启动都会请求更新服务器。
+
 ## GitHub Releases
 
 适合代码和发行包都放在 GitHub 的项目。

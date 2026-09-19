@@ -31,6 +31,7 @@ export default defineConfig(({ command, mode }) => {
         'import.meta.env.VITE_AUTO_UPDATE_ENABLED': JSON.stringify(
           env.VITE_AUTO_UPDATE_ENABLED || 'false',
         ),
+        'import.meta.env.VITE_AUTO_UPDATE_DEV': JSON.stringify(env.VITE_AUTO_UPDATE_DEV || 'false'),
         'import.meta.env.VITE_UPDATE_URL': JSON.stringify(env.VITE_UPDATE_URL || ''),
       },
       esbuild: {
@@ -76,13 +77,16 @@ export default defineConfig(({ command, mode }) => {
           plugins: [
             pxtorem({
               rootValue: 16,
-              propList: ['*', '!font-size'],
+              // font-size 和 Element Plus 的样式都必须一起转：漏掉任何一类，
+              // 根字号缩放时就会有一部分尺寸跟着缩、一部分不动，布局直接错位
+              propList: ['*'],
               selectorBlackList: ['.no-rem'],
-              unitPrecision: 1,
+              unitPrecision: 3,
               replace: true,
               mediaQuery: false,
-              minPixelValue: 1,
-              exclude: /node_modules/i,
+              // 1px 必须留在 px：Element Plus 也参与转换后，1px 描边会变成
+              // 0.0625rem，窄窗口缩到 0.75 倍就不足 1 物理像素、直接发虚
+              minPixelValue: 2,
             }),
           ],
         },

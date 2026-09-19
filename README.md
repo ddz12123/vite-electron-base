@@ -35,21 +35,19 @@
 │   │   └── channels.ts
 │   └── renderer/          # 渲染进程
 │       └── src/
-│           ├── assets/    # 静态资源
 │           ├── components/# 公共组件
 │           ├── composables# 组合式函数
-│           ├── constant/  # 常量
+│           ├── constant/  # 常量（路由名、存储键）
 │           ├── router/    # 路由
 │           ├── store/     # Pinia 状态管理
 │           ├── styles/    # 全局样式
-│           ├── types/     # 类型定义
+│           ├── types/     # 类型定义（自动生成，不入库）
 │           ├── utils/     # 工具函数
 │           ├── views/     # 页面组件
 │           ├── App.vue
 │           └── main.ts
 ├── resources/             # 应用资源（图标等）
 ├── build/                 # 构建资源
-├── scripts/               # 构建脚本
 ├── electron.vite.config.ts
 ├── electron-builder.config.mjs
 └── package.json
@@ -62,7 +60,8 @@
 - IPC channel 和跨进程数据类型统一放在 `src/shared/`，三个环境都用 `@shared/` 别名引用，避免字符串和接口重复维护。
 - 业务组件一律显式 `import`（`components/` 不参与自动注册），只有 Element Plus 组件由解析器按需引入。
 - 可复用的 renderer 逻辑放在 `composables/`，页面组件只负责组合业务和展示。
-- 路由使用 `meta.title` 管理窗口标题；需要登录的页面可使用 `meta.requiresAuth` 扩展路由守卫。
+- 路由使用 `meta.title` 管理窗口标题；需要登录的页面标 `meta.requiresAuth`，路由守卫会校验本地 token，未注册登录路由时重定向回首页而不是放行。
+- 路由名统一从 `constant/route.ts` 的 `ROUTE_NAMES` 引用，避免注册处与守卫、401 跳转处大小写不一致。
 
 ## 环境变量配置
 
@@ -72,7 +71,9 @@
 | `VITE_APP_TITLE`            | 应用显示名称（可中文）  | `ViteElectronBase`             |
 | `VITE_APP_EXECUTABLE_NAME`  | 可执行文件名（英文）    | `vite-electron-base`           |
 | `VITE_API_BASE_URL`         | API 接口地址            | `http://localhost:3000/api`    |
+| `VITE_CSP_CONNECT_SRC`      | CSP 允许请求的来源      | `https://api.example.com`      |
 | `VITE_AUTO_UPDATE_ENABLED`  | 是否启用自动更新        | `false`                        |
+| `VITE_AUTO_UPDATE_DEV`      | 开发环境调试自动更新    | `false`                        |
 | `VITE_AUTO_UPDATE_PROVIDER` | 更新发布方式            | `github` / `generic`           |
 | `VITE_UPDATE_URL`           | Generic 更新地址        | `https://updates.example.com/` |
 | `VITE_UPDATE_GITHUB_OWNER`  | GitHub 仓库所有者       | `your-org`                     |
@@ -87,7 +88,13 @@
 
 `VITE_UPDATE_URL` 未配置时不会启用自动更新，也不会在安装包中写入示例发布地址。
 
-自动更新默认关闭。GitHub Releases 和自定义更新服务器的 CI 配置见 [`docs/ci.md`](docs/ci.md)。
+自动更新默认关闭。GitHub Releases 和自定义更新服务器的 CI 配置见 [`docs/ci.md`](docs/ci.md)。检查或下载失败会写入系统日志目录下的 `updater.log`（`app.getPath('logs')`），更新包下载完成后弹系统通知。
+
+## 尺寸适配
+
+`postcss-pxtorem` 把项目内与 Element Plus 的 px 统一转成 rem（`rootValue: 16`；`minPixelValue: 2`，`1px` 描边保持 px 不转换），`utils/rem.ts` 按窗口宽度改 `html` 根字号：内容宽度 ≥1280 一律 1:1（窗口用 `useContentSize` 按内容尺寸设定），更窄时等比缩小、最低 12px。
+
+两侧必须一起转：任何一类样式漏掉（例如只排除 node_modules 或只排除 `font-size`），缩放时就会出现一部分尺寸跟着缩、一部分不动，直接错位。需要固定像素的元素加 `.no-rem` 前缀选择器。
 
 ## 快速开始
 
@@ -167,12 +174,12 @@ pnpm build:linux
 - ✅ Pinia 状态管理（支持持久化）
 - ✅ Vue Router 路由管理
 - ✅ Tailwind CSS 原子化样式
-- ✅ postcss-pxtorem 自适应方案
+- ✅ postcss-pxtorem 自适应方案（≥1280 宽 1:1，窄窗口等比缩小）
 - ✅ ESLint + Prettier 代码规范
 - ✅ Husky + lint-staged Git 提交规范
 - ✅ 环境变量配置（dev/prod）
 - ✅ 自动打包配置
-- ✅ 自动更新配置（默认关闭，支持 GitHub / Generic）
+- ✅ 自动更新配置（默认关闭，支持 GitHub / Generic，下载完成后系统通知）
 
 ## 许可证
 

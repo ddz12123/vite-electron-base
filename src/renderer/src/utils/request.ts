@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import router from '@renderer/router';
+import { ROUTE_NAMES } from '@renderer/constant/route';
 import { clearToken, getToken, normalizeRedirect } from '@renderer/utils/auth';
 
 /** 后端统一响应结构 */
@@ -36,6 +37,31 @@ const isApiResponse = (data: unknown): data is ApiResponse => {
   );
 };
 
+// 下载类接口出错时，后端会把 JSON 错误体塞进二进制响应里，不解析就会被当成文件保存
+const unwrapJsonBody = async (data: unknown, headers: unknown): Promise<unknown> => {
+  const headerMap = headers as Record<string, unknown> | undefined;
+  if (!/application\/json/i.test(String(headerMap?.['content-type'] ?? ''))) return data;
+
+  let text: string | null = null;
+  if (data instanceof Blob) text = await data.text();
+  else if (data instanceof ArrayBuffer) text = new TextDecoder().decode(data);
+  if (text === null) return data;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return data;
+  }
+};
+
+const pickMessage = (payload: unknown): string => {
+  if (payload && typeof payload === 'object' && 'message' in payload) {
+    const message = (payload as { message: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return '';
+};
+
 export const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 120000,
@@ -45,15 +71,25 @@ const redirectToLogin = (): void => {
   clearToken();
 
   // 基础框架默认没有 login 路由，业务侧注册后自动生效
-  if (!router.hasRoute('login')) return;
-  if (router.currentRoute.value.name === 'login') return;
+  if (!router.hasRoute(ROUTE_NAMES.login)) return;
+  if (router.currentRoute.value.name === ROUTE_NAMES.login) return;
 
   const currentPath = normalizeRedirect(router.currentRoute.value.fullPath);
 
   void router.replace({
-    name: 'login',
+    name: ROUTE_NAMES.login,
     query: { redirect: currentPath },
   });
+};
+
+// 业务错误体未必带 data 字段，但至少要像统一响应体，否则 { code: 110000 } 这类业务字段会被误判
+const pickBusinessError = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== 'object' || !('code' in payload)) return null;
+  const code = (payload as { code: unknown }).code;
+  if (typeof code !== 'number' || SUCCESS_CODES.has(code)) return null;
+  if (!('message' in payload) && !('data' in payload)) return null;
+  if (code === 401) redirectToLogin();
+  return pickMessage(payload) || '请求失败';
 };
 
 request.interceptors.request.use((config: InternalAxiosRequestConfig & RequestConfig) => {
@@ -67,38 +103,33 @@ request.interceptors.request.use((config: InternalAxiosRequestConfig & RequestCo
 });
 
 request.interceptors.response.use(
-  (response) => {
-    // 文件流等场景直接透传
-    if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
-      return response.data;
-    }
+  async (response) => {
+    const payload = await unwrapJsonBody(response.data, response.headers);
+    const businessError = pickBusinessError(payload);
+    if (businessError) return Promise.reject(new Error(businessError));
 
-    const data = response.data;
-
-    // 非统一响应结构，直接透传
-    if (!isApiResponse(data)) return data;
-
-    // 统一成功：只返回 data，业务层更干净
-    if (SUCCESS_CODES.has(data.code)) return data.data;
-
-    if (data.code === 401) {
-      redirectToLogin();
-    }
-
-    return Promise.reject(new Error(data.message || '请求失败'));
+    // 文件流原样返回，统一响应体只取 data
+    const responseType = response.config.responseType;
+    if (responseType === 'blob' || responseType === 'arraybuffer') return response.data;
+    return isApiResponse(payload) ? payload.data : payload;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     const status = error.response?.status;
 
     if (status === 401) {
       redirectToLogin();
     }
 
-    const message = status
-      ? HTTP_ERROR_MAP[status] || `请求失败（${status}）`
-      : error.code === 'ECONNABORTED'
-        ? '请求超时，请稍后再试'
-        : '网络异常，请检查网络连接';
+    const serverMessage = pickMessage(
+      await unwrapJsonBody(error.response?.data, error.response?.headers),
+    );
+    const message =
+      serverMessage ||
+      (status
+        ? HTTP_ERROR_MAP[status] || `请求失败（${status}）`
+        : error.code === 'ECONNABORTED'
+          ? '请求超时，请稍后再试'
+          : '网络异常，请检查网络连接');
 
     return Promise.reject(new Error(message));
   },

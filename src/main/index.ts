@@ -10,14 +10,19 @@ const APP_ID = import.meta.env.VITE_APP_ID?.trim() || 'com.electron.app';
 const APP_TITLE = import.meta.env.VITE_APP_TITLE?.trim();
 const AUTO_UPDATE_ENABLED =
   import.meta.env.VITE_AUTO_UPDATE_ENABLED?.trim().toLowerCase() === 'true';
+const AUTO_UPDATE_DEV_ENABLED =
+  import.meta.env.VITE_AUTO_UPDATE_DEV?.trim().toLowerCase() === 'true';
 const UPDATE_URL = import.meta.env.VITE_UPDATE_URL?.trim();
 
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1280,
+    height: 800,
+    // width/height 默认算窗口外框，而 rem.ts 读的是 innerWidth，
+    // 按内容尺寸设定才能保证 1280 宽时根字号真的是 16px
+    useContentSize: true,
     show: false,
     autoHideMenuBar: true,
     title: APP_TITLE || app.getName(),
@@ -86,7 +91,11 @@ if (!gotSingleInstanceLock) {
     });
 
     registerIpcHandlers();
-    setupAutoUpdater({ enabled: AUTO_UPDATE_ENABLED, feedUrl: UPDATE_URL });
+    setupAutoUpdater({
+      enabled: AUTO_UPDATE_ENABLED,
+      feedUrl: UPDATE_URL,
+      devEnabled: AUTO_UPDATE_DEV_ENABLED,
+    });
     createWindow();
 
     app.on('activate', () => {

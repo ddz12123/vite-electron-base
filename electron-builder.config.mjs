@@ -96,10 +96,15 @@ export default {
   directories: {
     buildResources: 'build',
   },
+  // 只写排除项等于"其余全收"：本地 pnpm store、文档、构建配置都会被塞进 app.asar
   files: [
     '!**/.vscode/*',
     '!src/*',
+    '!docs/*',
+    '!.pnpm-store/*',
+    '!pnpm-workspace.yaml',
     '!electron.vite.config.{js,ts,mjs,cjs}',
+    '!electron-builder.config.mjs',
     '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc,dev-app-update.yml,CHANGELOG.md,README.md}',
     '!{.env,.env.*,.npmrc,pnpm-lock.yaml}',
     '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}',
@@ -133,7 +138,7 @@ export default {
     ...(nsisGuid ? { guid: nsisGuid } : {}),
   },
   mac: {
-    icon: 'resources/icon.png',
+    icon: 'build/icon.icns',
     entitlementsInherit: 'build/entitlements.mac.plist',
     extendInfo: {
       NSCameraUsageDescription: "Application requests access to the device's camera.",

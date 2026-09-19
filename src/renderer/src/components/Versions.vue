@@ -4,7 +4,7 @@ import { useAppInfo } from '@renderer/composables/useAppInfo';
 
 const { info, loading } = useAppInfo();
 const versions = computed(() => ({
-  app: info.value?.version || '开发环境',
+  app: info.value?.version || '—',
   electron: info.value?.electronVersion || window.electron.process.versions.electron,
   chrome: info.value?.chromeVersion || window.electron.process.versions.chrome,
   node: info.value?.nodeVersion || window.electron.process.versions.node,
