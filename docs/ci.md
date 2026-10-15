@@ -38,7 +38,6 @@ GH_TOKEN=<具有 contents:write 权限的 GitHub Token>
 ```bash
 pnpm run build:win -- --publish always
 pnpm run build:mac -- --publish always
-pnpm run build:linux -- --publish always
 ```
 
 版本号应先更新 `package.json`，再创建对应的 `v*` Git tag。GitHub Provider 会上传安装包、`latest*.yml` 和 blockmap 文件，客户端启动时会从对应 Release 查询更新。
@@ -65,8 +64,6 @@ jobs:
             target: win
           - os: macos-latest
             target: mac
-          - os: ubuntu-latest
-            target: linux
     runs-on: ${{ matrix.os }}
     env:
       VITE_AUTO_UPDATE_ENABLED: 'true'
@@ -76,9 +73,8 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      # 不指定 version：自动读取 package.json 的 packageManager，与本地 pnpm 版本一致
       - uses: pnpm/action-setup@v4
-        with:
-          version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -104,10 +100,8 @@ VITE_UPDATE_URL=https://downloads.example.com/vite-electron-base/
 ```text
 latest.yml
 latest-mac.yml
-latest-linux.yml
 vite-electron-base-1.0.1-setup.exe
 vite-electron-base-1.0.1.dmg
-vite-electron-base-1.0.1.AppImage
 ```
 
 实际文件名以 `electron-builder` 生成的产物为准；不要手工修改 `latest*.yml` 中的 sha512 和文件大小。
@@ -119,5 +113,5 @@ vite-electron-base-1.0.1.AppImage
 - `package.json` 的版本号已递增，且没有复用旧版本号。
 - `VITE_AUTO_UPDATE_ENABLED` 只在发布 CI 中设置为 `true`。
 - GitHub 模式配置了 `GH_TOKEN`，Generic 模式确认 `latest*.yml` 与安装包位于同一更新目录。
-- Windows、macOS、Linux 分别使用目标平台构建，不要把一个平台的更新元数据混用到其他平台。
+- Windows、macOS 分别使用目标平台构建，不要把一个平台的更新元数据混用到其他平台。
 - 正式发布建议启用代码签名；签名变化会影响 Windows/macOS 的升级体验。

@@ -1,18 +1,17 @@
-import { app, shell, BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { registerIpcHandlers } from './ipc';
-import { isAllowedExternalUrl, isAllowedNavigation } from './security';
+import { registerSecurityHandlers } from './security';
 import { setupAutoUpdater } from './updater';
 import icon from '../../resources/icon.png?asset';
 
-const APP_ID = import.meta.env.VITE_APP_ID?.trim() || 'com.electron.app';
-const APP_TITLE = import.meta.env.VITE_APP_TITLE?.trim();
-const AUTO_UPDATE_ENABLED =
-  import.meta.env.VITE_AUTO_UPDATE_ENABLED?.trim().toLowerCase() === 'true';
-const AUTO_UPDATE_DEV_ENABLED =
-  import.meta.env.VITE_AUTO_UPDATE_DEV?.trim().toLowerCase() === 'true';
-const UPDATE_URL = import.meta.env.VITE_UPDATE_URL?.trim();
+// 取值与默认值统一在 .env 中维护，这里不再重复兜底
+const env = import.meta.env;
+const isTrue = (value: string | undefined): boolean => value?.trim().toLowerCase() === 'true';
+
+const RENDERER_ENTRY = join(__dirname, '../renderer/index.html');
+const DEV_URL = process.env['ELECTRON_RENDERER_URL'];
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -25,7 +24,7 @@ function createWindow(): void {
     useContentSize: true,
     show: false,
     autoHideMenuBar: true,
-    title: APP_TITLE || app.getName(),
+    title: env.VITE_APP_TITLE,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -45,29 +44,10 @@ function createWindow(): void {
     mainWindow = null;
   });
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    if (isAllowedExternalUrl(details.url)) {
-      void shell.openExternal(details.url);
-    }
-    return { action: 'deny' };
-  });
-
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (
-      !isAllowedNavigation(url, {
-        isDev: is.dev,
-        devUrl: process.env['ELECTRON_RENDERER_URL'],
-        appEntryPath: join(__dirname, '../renderer/index.html'),
-      })
-    ) {
-      event.preventDefault();
-    }
-  });
-
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  if (is.dev && DEV_URL) {
+    mainWindow.loadURL(DEV_URL);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(RENDERER_ENTRY);
   }
 }
 
@@ -84,17 +64,18 @@ if (!gotSingleInstanceLock) {
   });
 
   app.whenReady().then(() => {
-    electronApp.setAppUserModelId(APP_ID);
+    electronApp.setAppUserModelId(env.VITE_APP_ID);
 
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window);
     });
 
+    registerSecurityHandlers({ isDev: is.dev, devUrl: DEV_URL, appEntryPath: RENDERER_ENTRY });
     registerIpcHandlers();
     setupAutoUpdater({
-      enabled: AUTO_UPDATE_ENABLED,
-      feedUrl: UPDATE_URL,
-      devEnabled: AUTO_UPDATE_DEV_ENABLED,
+      enabled: isTrue(env.VITE_AUTO_UPDATE_ENABLED),
+      feedUrl: env.VITE_UPDATE_URL?.trim(),
+      devEnabled: isTrue(env.VITE_AUTO_UPDATE_DEV),
     });
     createWindow();
 

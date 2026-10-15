@@ -36,7 +36,7 @@ router.beforeEach((to) => {
 });
 
 router.afterEach((to) => {
-  const appTitle = import.meta.env.VITE_APP_TITLE || 'ViteElectronBase';
+  const appTitle = import.meta.env.VITE_APP_TITLE;
   document.title = to.meta.title ? `${to.meta.title} - ${appTitle}` : appTitle;
 });
 

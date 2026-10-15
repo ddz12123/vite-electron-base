@@ -1,62 +1,21 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { loadAppEnv } from './build/env.mjs';
 
-const rootDir = process.cwd();
+// 与 electron-vite build 读同一套 .env（含 .env.local / .env.production.local），默认值见 build/env.mjs
+const env = loadAppEnv('production');
 
-const parseEnvFile = (filePath) => {
-  if (!existsSync(filePath)) {
-    return {};
-  }
-
-  const content = readFileSync(filePath, 'utf8');
-  const env = {};
-
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
-      continue;
-    }
-
-    const separatorIndex = line.indexOf('=');
-    if (separatorIndex <= 0) {
-      continue;
-    }
-
-    const key = line.slice(0, separatorIndex).trim();
-    let value = line.slice(separatorIndex + 1).trim();
-
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    env[key] = value;
-  }
-
-  return env;
-};
-
-// Priority: process.env > .env.production > .env
-const env = {
-  ...parseEnvFile(resolve(rootDir, '.env')),
-  ...parseEnvFile(resolve(rootDir, '.env.production')),
-  ...process.env,
-};
-
-const packageJson = JSON.parse(readFileSync(resolve(rootDir, 'package.json'), 'utf8'));
+const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 const packageVersion = String(packageJson.version ?? '').trim();
 
-const appTitle = env.VITE_APP_TITLE?.trim() || 'ViteElectronBase';
-const appId = env.VITE_APP_ID?.trim() || 'com.electron.app';
-const executableName = env.VITE_APP_EXECUTABLE_NAME?.trim() || 'vite-electron-base';
-const autoUpdateEnabled = env.VITE_AUTO_UPDATE_ENABLED?.trim().toLowerCase() === 'true';
-const updateProvider = env.VITE_AUTO_UPDATE_PROVIDER?.trim().toLowerCase() || 'generic';
-const updateUrl = env.VITE_UPDATE_URL?.trim();
-const githubOwner = env.VITE_UPDATE_GITHUB_OWNER?.trim();
-const githubRepo = env.VITE_UPDATE_GITHUB_REPO?.trim();
-const nsisGuid = env.VITE_NSIS_GUID?.trim();
+const appTitle = env.VITE_APP_TITLE;
+const appId = env.VITE_APP_ID;
+const executableName = env.VITE_APP_EXECUTABLE_NAME;
+const autoUpdateEnabled = env.VITE_AUTO_UPDATE_ENABLED.toLowerCase() === 'true';
+const updateProvider = env.VITE_AUTO_UPDATE_PROVIDER.toLowerCase();
+const updateUrl = env.VITE_UPDATE_URL;
+const githubOwner = env.VITE_UPDATE_GITHUB_OWNER;
+const githubRepo = env.VITE_UPDATE_GITHUB_REPO;
+const nsisGuid = env.VITE_NSIS_GUID;
 
 const publish = (() => {
   if (!autoUpdateEnabled) return undefined;
@@ -96,20 +55,12 @@ export default {
   directories: {
     buildResources: 'build',
   },
-  // 只写排除项等于"其余全收"：本地 pnpm store、文档、构建配置都会被塞进 app.asar
-  files: [
-    '!**/.vscode/*',
-    '!src/*',
-    '!docs/*',
-    '!.pnpm-store/*',
-    '!pnpm-workspace.yaml',
-    '!electron.vite.config.{js,ts,mjs,cjs}',
-    '!electron-builder.config.mjs',
-    '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc,dev-app-update.yml,CHANGELOG.md,README.md}',
-    '!{.env,.env.*,.npmrc,pnpm-lock.yaml}',
-    '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}',
-  ],
+  // 白名单：只收构建产物和运行时资源；package.json 与生产依赖由 electron-builder 自动加入。
+  // 不用排除项写法，否则每新增一个配置文件（.husky、.editorconfig…）都会被悄悄打进 app.asar
+  files: ['out/**', 'resources/**'],
   asarUnpack: ['resources/**'],
+  // 仅保留中英文语言包（Electron 默认保留全部 55 个语言 ≈ 47MB，裁剪后约 2MB）
+  electronLanguages: ['en-US', 'zh-CN'],
   win: {
     executableName,
     icon: 'build/icon.ico',
@@ -140,28 +91,13 @@ export default {
   mac: {
     icon: 'build/icon.icns',
     entitlementsInherit: 'build/entitlements.mac.plist',
-    extendInfo: {
-      NSCameraUsageDescription: "Application requests access to the device's camera.",
-      NSMicrophoneUsageDescription: "Application requests access to the device's microphone.",
-      NSDocumentsFolderUsageDescription:
-        "Application requests access to the user's Documents folder.",
-      NSDownloadsFolderUsageDescription:
-        "Application requests access to the user's Downloads folder.",
-    },
     notarize: false,
   },
   dmg: {
     artifactName: `${executableName}-${packageVersion}.\${ext}`,
   },
-  linux: {
-    icon: 'resources/icon.png',
-    target: ['AppImage', 'snap', 'deb'],
-    maintainer: 'electronjs.org',
-    category: 'Utility',
-  },
-  appImage: {
-    artifactName: `${executableName}-${packageVersion}.\${ext}`,
-  },
+  // 目前没有原生模块，跳过 rebuild 以加快打包；引入原生模块（如 better-sqlite3）后必须删掉此项，
+  // 否则 .node 文件仍是按本机 Node ABI 编译的，打包后运行才报错
   npmRebuild: false,
   ...(publish ? { publish } : {}),
   electronDownload: {

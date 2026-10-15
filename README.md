@@ -85,6 +85,9 @@
 - `.env` — 默认配置
 - `.env.development` — 开发环境
 - `.env.production` — 生产环境
+- `.env.local` / `.env.[mode].local` — 本机覆盖（已加入 .gitignore）
+
+dev、构建、打包三处统一通过 `build/env.mjs` 加载，优先级为 `process.env` > `.env.[mode].local` > `.env.[mode]` > `.env.local` > `.env`；未配置的变量回落到 `build/env.mjs` 中的 `ENV_DEFAULTS`，业务代码里不要再写兜底值。
 
 `VITE_UPDATE_URL` 未配置时不会启用自动更新，也不会在安装包中写入示例发布地址。
 
@@ -136,9 +139,6 @@ pnpm build:win
 
 # macOS
 pnpm build:mac
-
-# Linux
-pnpm build:linux
 ```
 
 打包配置从环境变量读取应用名称，安装包文件名格式：`{executableName}-{version}-setup.{ext}`

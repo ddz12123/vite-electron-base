@@ -56,5 +56,12 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // 构建脚本用 JSDoc 标注类型，不要求显式返回类型
+    files: ['**/*.mjs'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+    },
+  },
   eslintConfigPrettier,
 );
