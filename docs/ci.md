@@ -73,8 +73,10 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      # 不指定 version：自动读取 package.json 的 packageManager，与本地 pnpm 版本一致
+      # 使用 pnpm 12.x，不锁定具体版本
       - uses: pnpm/action-setup@v4
+        with:
+          version: 12
       - uses: actions/setup-node@v4
         with:
           node-version: 22
