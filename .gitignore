@@ -64,7 +64,3 @@ Desktop.ini
 *.swo
 *.orig
 *.rej
-
-# generated type declarations
-src/renderer/src/types/auto-imports.d.ts
-src/renderer/src/types/components.d.ts

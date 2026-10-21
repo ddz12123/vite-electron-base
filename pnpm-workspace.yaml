@@ -19,6 +19,8 @@ overrides:
   # v5 的 CJS 导出是 { expand } 命名导出，而 minimatch<10 直接把
   # require('brace-expansion') 当函数调用，强升会在打包时运行时报错
   'tar@7': '>=7.5.21 <8'
+  # axios 的 Node http 适配器依赖；渲染进程走 browser 适配器，不进产物，但审计仍会报
+  'follow-redirects@1': '>=1.16.1 <2'
   'brace-expansion@1': '>=1.1.21 <2'
   'brace-expansion@2': '>=2.1.7 <3'
   'brace-expansion@5': '>=5.0.12 <6'

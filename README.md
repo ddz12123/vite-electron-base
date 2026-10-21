@@ -41,7 +41,7 @@
 │           ├── router/    # 路由
 │           ├── store/     # Pinia 状态管理
 │           ├── styles/    # 全局样式
-│           ├── types/     # 类型定义（自动生成，不入库）
+│           ├── types/     # 类型定义（自动生成，已入库）
 │           ├── utils/     # 工具函数
 │           ├── views/     # 页面组件
 │           ├── App.vue
