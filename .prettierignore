@@ -6,3 +6,5 @@ LICENSE.md
 tsconfig.json
 tsconfig.*.json
 node_modules
+src/renderer/src/types/auto-imports.d.ts
+src/renderer/src/types/components.d.ts
