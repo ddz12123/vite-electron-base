@@ -26,6 +26,7 @@
 │   │   ├── index.ts        # 应用生命周期与窗口
 │   │   ├── ipc.ts          # IPC handler 注册
 │   │   ├── security.ts     # 导航与外链安全规则
+│   │   ├── logger.ts       # 日志落盘（更新、渲染进程错误）
 │   │   └── updater.ts      # 自动更新
 │   ├── preload/           # 预加载脚本
 │   │   ├── index.ts        # 类型化 renderer API
@@ -50,6 +51,7 @@
 ├── build/                 # 构建资源
 ├── electron.vite.config.ts
 ├── electron-builder.config.mjs
+├── vitest.config.mts
 └── package.json
 ```
 
@@ -62,6 +64,7 @@
 - 可复用的 renderer 逻辑放在 `composables/`，页面组件只负责组合业务和展示。
 - 路由使用 `meta.title` 管理窗口标题；需要登录的页面标 `meta.requiresAuth`，路由守卫会校验本地 token，未注册登录路由时重定向回首页而不是放行。
 - 路由名统一从 `constant/route.ts` 的 `ROUTE_NAMES` 引用，避免注册处与守卫、401 跳转处大小写不一致。
+- renderer 的全局错误（Vue 渲染错误、未处理的 Promise 拒绝）在生产环境经 `window.api.appendLog` 送到主进程，落到系统日志目录的 `renderer.log`；dev 不接管，保留控制台默认行为。
 
 ## 环境变量配置
 
@@ -82,6 +85,7 @@
 
 环境文件：
 
+- `.env.example` — 全部变量的示例模板，可作为 `.env` 的起点
 - `.env` — 默认配置
 - `.env.development` — 开发环境
 - `.env.production` — 生产环境
@@ -91,7 +95,7 @@ dev、构建、打包三处统一通过 `build/env.mjs` 加载，优先级为 `p
 
 `VITE_UPDATE_URL` 未配置时不会启用自动更新，也不会在安装包中写入示例发布地址。
 
-自动更新默认关闭。GitHub Releases 和自定义更新服务器的 CI 配置见 [`docs/ci.md`](docs/ci.md)。检查或下载失败会写入系统日志目录下的 `updater.log`（`app.getPath('logs')`），更新包下载完成后弹系统通知。
+自动更新默认关闭。GitHub Releases 和自定义更新服务器的 CI 配置见 [`docs/ci.md`](docs/ci.md)。检查或下载失败会写入系统日志目录下的 `updater.log`（`app.getPath('logs')`），更新包下载完成后弹系统通知；renderer 的全局错误也落在同一目录（`renderer.log`）。
 
 ## 尺寸适配
 
@@ -130,6 +134,14 @@ pnpm lint
 ```bash
 pnpm format
 ```
+
+### 单元测试
+
+```bash
+pnpm test
+```
+
+测试文件与源码同目录（`*.test.ts`），配置见 `vitest.config.mts`；模板自带主进程安全规则与渲染进程工具函数的示例。组件测试需要时再引入 `@vue/test-utils` 与 jsdom/happy-dom。
 
 ## 打包构建
 
@@ -176,10 +188,12 @@ pnpm build:mac
 - ✅ Tailwind CSS 原子化样式
 - ✅ postcss-pxtorem 自适应方案（≥1280 宽 1:1，窄窗口等比缩小）
 - ✅ ESLint + Prettier 代码规范
-- ✅ Husky + lint-staged Git 提交规范
+- ✅ Husky + lint-staged + commitlint Git 提交规范
+- ✅ Vitest 单元测试（纯逻辑示例，安全规则与重定向校验）
 - ✅ 环境变量配置（dev/prod）
 - ✅ 自动打包配置
 - ✅ 自动更新配置（默认关闭，支持 GitHub / Generic，下载完成后系统通知）
+- ✅ 渲染进程全局错误上报（生产环境写入 renderer.log）
 
 ## 许可证
 

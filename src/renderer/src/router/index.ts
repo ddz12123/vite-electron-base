@@ -19,6 +19,8 @@ const router = createRouter({
       meta: { title: '首页' },
       component: () => import('@renderer/views/home/index.vue'),
     },
+    // 未知路径一律回首页，避免哈希打错时渲染成白屏
+    { path: '/:pathMatch(.*)*', redirect: { name: ROUTE_NAMES.home } },
   ],
 });
 

@@ -56,6 +56,7 @@ Desktop.ini
 .codeium/
 .augment/
 .aider*
+.mimosa/
 
 # temporary files
 *.tmp

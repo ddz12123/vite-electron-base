@@ -1,0 +1,25 @@
+# 基础检查：push / PR 时跑 lint、类型检查、单元测试与生产构建。
+# 发布流水线（签名、打包、--publish always）见 docs/ci.md，按需单独创建
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm 版本读取 package.json 的 packageManager 字段
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

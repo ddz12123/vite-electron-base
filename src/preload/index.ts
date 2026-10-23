@@ -7,6 +7,7 @@ import { IPC_CHANNELS } from '@shared/channels';
 const api: AppApi = {
   getInfo: () => ipcRenderer.invoke(IPC_CHANNELS.getAppInfo),
   openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
+  appendLog: (detail) => ipcRenderer.invoke(IPC_CHANNELS.appendLog, detail),
 };
 
 // 主窗口固定开启 contextIsolation，不保留挂到 globalThis 的降级分支

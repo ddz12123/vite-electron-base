@@ -8,6 +8,8 @@ VITE_AUTO_UPDATE_ENABLED=true
 
 普通开发和普通构建保持默认值 `false`，不会请求更新服务。
 
+日常检查（lint、类型检查、测试、构建）由 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) 在 push / PR 时自动执行；本文件只描述发布与自动更新相关配置。
+
 ## 本地调试自动更新
 
 打包后才会检查更新；想在 `pnpm dev` 里调试，额外设置：
@@ -73,10 +75,8 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      # 使用 pnpm 12.x，不锁定具体版本
+      # pnpm 版本读取 package.json 的 packageManager 字段，无需在这里锁定
       - uses: pnpm/action-setup@v4
-        with:
-          version: 12
       - uses: actions/setup-node@v4
         with:
           node-version: 22
